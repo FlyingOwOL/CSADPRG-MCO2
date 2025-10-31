@@ -1,4 +1,4 @@
-#JavaScript version of Data Anaylsis Pipeline Project
+# JavaScript version of Data Anaylsis Pipeline Project
 
 
 - [Required Installs](#required-installs)
