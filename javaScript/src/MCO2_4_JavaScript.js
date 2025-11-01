@@ -1,6 +1,8 @@
 import promptSync from "prompt-sync";
 const prompt = promptSync();
 
+import { loadData } from "./file_loader.js";
+
 
 let userChoice = null;
 
@@ -12,7 +14,7 @@ do{
     userChoice = prompt("Enter choice: ");
     switch(userChoice){
         case '1':
-            console.log("in-progress...\n\n\n");
+            loadData();
             break;
         case '2':
             console.log("in-progress...\n\n\n");
