@@ -11,6 +11,12 @@
 
 3rd Scroll down choose your OS and download
 
+    (Do this final step after opening a project folder)
+4th input this to the terminal to import user prompter
+```
+npm install prompt-sync
+```
+
 
 ## How to Run in CMD
 copy paste in command line
