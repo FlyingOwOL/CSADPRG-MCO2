@@ -5,6 +5,7 @@ import { loadData } from "./file_loader.js";
 
 
 let userChoice = null;
+let loadedData = null;
 
 do{
     console.log("Select Language Implementation:\n" +
@@ -14,7 +15,7 @@ do{
     userChoice = prompt("Enter choice: ");
     switch(userChoice){
         case '1':
-            console.log(loadData());
+            loadedData = loadData();
             break;
         case '2':
             console.log("in-progress...\n\n\n");
