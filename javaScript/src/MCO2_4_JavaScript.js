@@ -14,7 +14,7 @@ do{
     userChoice = prompt("Enter choice: ");
     switch(userChoice){
         case '1':
-            loadData();
+            console.log(loadData());
             break;
         case '2':
             console.log("in-progress...\n\n\n");
