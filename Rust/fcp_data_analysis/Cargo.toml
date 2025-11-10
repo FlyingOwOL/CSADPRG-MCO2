@@ -1,0 +1,15 @@
+[package]
+name = "fcp_data_analysis"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+csv = "1"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0"
+chrono = "0.4"
+num-format = "0.4"
+
+[[bin]]
+name = "fcp_data_analysis"
+path = "src/MCO2_4_Rust.rs"
