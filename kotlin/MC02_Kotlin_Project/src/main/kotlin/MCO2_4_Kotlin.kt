@@ -1,5 +1,8 @@
-
-
+/*********************
+Last names: Dela Torre, Espada, Laguerta, Sy
+Language: Kotlin
+Paradigm(s): Procedural, Functional, Data-Oriented
+ *********************/
 import org.jetbrains.kotlinx.dataframe.DataFrame
 import org.jetbrains.kotlinx.dataframe.io.*
 import org.jetbrains.kotlinx.dataframe.api.*
