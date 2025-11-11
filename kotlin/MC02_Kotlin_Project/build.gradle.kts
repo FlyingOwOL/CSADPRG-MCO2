@@ -1,6 +1,8 @@
 plugins {
     kotlin("jvm") version "2.2.20"
     kotlin("plugin.dataframe") version "2.2.20"
+    id("application")
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 group = "org.example"
@@ -22,6 +24,20 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+tasks.named<JavaExec>("run") {
+    standardInput = System.`in`
+}
+tasks.shadowJar {
+    archiveBaseName.set("MCO2_4_Kotlin")
+    archiveClassifier.set("")
+    archiveVersion.set("1.0-SNAPSHOT")
+    manifest {
+        attributes["Main-Class"] = "MainKt"
+    }
+}
 kotlin {
     jvmToolchain(21)
+}
+application {
+    mainClass.set("MCO2_4_KotlinKt")
 }

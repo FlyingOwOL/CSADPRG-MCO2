@@ -3,6 +3,10 @@ Last names: Dela Torre, Espada, Laguerta, Sy
 Language: Kotlin
 Paradigm(s): Procedural, Functional, Data-Oriented
  *********************/
+
+
+// RUN INSTRUCTION: Use `./gradlew shadowJar` to build the fat jar file with all the dependencies included
+// Then run the jar file using `java -jar build/libs/MCO2_Kotlin-1.0-SNAPSHOT.jar`
 import org.jetbrains.kotlinx.dataframe.DataFrame
 import org.jetbrains.kotlinx.dataframe.io.*
 import org.jetbrains.kotlinx.dataframe.api.*
@@ -164,7 +168,7 @@ fun generateReport1(dfFloodControlFinal: DataFrame<*>): DataFrame<*> {
         "EfficiencyScoreRaw" from {
             val medianSavings = it["MedianSavings"] as Double
             val avgDelay = it["AvgDelay"] as Double
-            if (avgDelay != 0.0) (medianSavings / avgDelay).round(2) * 100 else 0.00
+            if (avgDelay != 0.0) (medianSavings / avgDelay) * 100 else 0.00
         }
     }
     val dfNormalizedEfficiencyScore = dfAddEfficiencyScore.add {
