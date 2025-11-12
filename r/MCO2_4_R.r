@@ -1,11 +1,33 @@
 # If 'tidyverse' is old or not installed yet, uncomment the below line for this code to work.
 # Once 'tidyverse' is already installed on the first run, it can be commented again so
 # that it would not download 1.2MB over and over.
+#
+# Same goes for 'jsonlite'.
+#
+
 #suppressMessages(install.packages('tidyverse',repos='https://cloud.r-project.org'))
+#suppressMessages(install.packages('jsonlite',repos='https://cloud.r-project.org'))
 suppressMessages(library(tidyverse))
-suppressMessages(library(data.table))
-suppressMessages(library(stringr))
+suppressMessages(library(jsonlite))
 options(width=1000)
+
+DEFAULT_CSV_LOC <- '..\\data\\dpwh_flood_control_projects.csv'
+DATA_FRAME <- NA
+
+REP1_DEFNAME <- 'report1_regional_summary.csv'
+REP2_DEFNAME <- 'report2_contractor_ranking.csv'
+REP3_DEFNAME <- 'report3_annual_trends.csv'
+JSON_DEFNAME <- 'summary.json'
+
+# For reading inputs
+prompter <- function(placeholder) {
+	if (interactive()) {
+		readline(placeholder)
+	} else {
+		cat(placeholder)
+		readLines("stdin",n=1)
+	}
+}
 
 # For sending outputs
 printer <- function(msg) { if (interactive()) print(msg) else cat(msg) }
@@ -112,9 +134,42 @@ report3 <- function(content) {
 	return(list(content=csv_new,rows=csv_new_rows))
 }
 
+get_json_contents <- function(content) {
+	return(
+		list(
+			total_projects=nrow(content),
+			total_contractors=length(unique(content$Contractor)),
+			total_provinces=length(unique(content$Province)),
+			total_regions=length(unique(content$Region)),
+			overall_average_delay=(content %>%
+				mutate(Delay=as.numeric(as.Date(ActualCompletionDate)-as.Date(StartDate),units='days')) %>%
+				summarize(AvgDelay=mean(Delay)) %>%
+				pull(AvgDelay,1)
+			),
+			overall_total_savings=(content %>%
+				mutate(CostSavings=force_numeric(ApprovedBudgetForContract)-force_numeric(ContractCost)) %>%
+				summarize(TotalSavings=sum(CostSavings)) %>%
+				pull(TotalSavings,1)
+			),
+			overall_total_budget=(content %>%
+				summarize(OverallTotalBudget=sum(force_numeric(ApprovedBudgetForContract))) %>%
+				pull(OverallTotalBudget,1)
+			),
+			year_begin=(content %>%
+				summarize(YearBegin=min(as.numeric(FundingYear))) %>%
+				pull(YearBegin,1)
+			),
+			year_end=(content %>%
+				summarize(YearEnd=max(as.numeric(FundingYear))) %>%
+				pull(YearEnd,1)
+			)
+		)
+	)
+}
+
 load_file <- function(csv_path_to_file) {
 	CSV_DATA <- smw(read_csv(csv_path_to_file))
-	CSV_DATA <- smw(CSV_DATA %>%
+	CSV_DATAF <- smw(CSV_DATA %>%
 		filter(
 			!is.na(force_numeric(ApprovedBudgetForContract)) &
 			!is.na(force_numeric(ContractCost)) &
@@ -122,22 +177,115 @@ load_file <- function(csv_path_to_file) {
 			!is.na(force_numeric(ProvincialCapitalLongitude))
 		)
 	)
-	CSV_DATA <- CSV_DATA %>%
+	CSV_DATAF <- CSV_DATAF %>%
 		filter(FundingYear>=2021 & FundingYear<=2023)
 	CSV_ROWS<-nrow(CSV_DATA)
-	return(list(content=CSV_DATA,rows=CSV_ROWS))
+	CSV_ROWSF<-nrow(CSV_DATAF)
+	return(list(content=CSV_DATAF,rows=CSV_ROWS,frows=CSV_ROWSF))
+}
+
+gen_rep <- function(data_frame) {
+	# Generate reports
+	printer('\nGenerating reports...')
+	rep1<-smw(report1(data_frame$content))
+	prt1<-smw(rep1$content %>% head(n=3))
+	rep2<-smw(report2(data_frame$content))
+	prt2<-smw(rep2$content %>% head(n=3))
+	rep3<-smw(report3(data_frame$content))
+	prt3<-smw(rep3$content %>% head(n=3))
+	jsondata<-get_json_contents(data_frame$content)
+	prtjson<-smw(toJSON(jsondata,pretty=TRUE,auto_unbox=TRUE))
+	# Write
+	write_csv(rep1$content,REP1_DEFNAME)
+	write_csv(rep2$content,REP2_DEFNAME)
+	write_csv(rep3$content,REP3_DEFNAME)
+	write_json(jsondata,JSON_DEFNAME,pretty=TRUE)
+	printer('\nOutput saved to original files.')
+	# Print report 1
+	printer('\n\nReport 1: Regional Flood Mitigation Efficiency Summary')
+	printer('\n(Filter: 2021-2023 Projects)\n\n')
+	print.data.frame(prt1)
+	printer(paste0('\n(Full table exported to \'',REP1_DEFNAME,'\'.)'))
+	# Print report 2
+	printer('\n\nReport 2: Top Contractors Performance Ranking')
+	printer('\n(Top 15 by TotalCost, >=5 Projects)\n\n')
+	print.data.frame(prt2)
+	printer(paste0('\n(Full table exported to \'',REP2_DEFNAME,'\'.)'))
+	# Print report 3
+	printer('\n\nReport 3: Annual Project Type Cost Overrun Trends')
+	printer('\n(Grouped by FundingYear and TypeOfWork)\n\n')
+	print.data.frame(prt3)
+	printer(paste0('\n(Full table exported to \'',REP3_DEFNAME,'\'.)'))
+	# Print JSON info
+	printer('\n\nSummary Stats (summary.json):\n')
+	printer(prtjson)
+	printer('\n')
+}
+
+mco2_err_msg <- function(int,next_state) {
+	switch(
+		int,
+		'err1.1'=printer('\nError: You have already loaded the data file.\n'),
+		'err1.2'=printer(paste0('\nError: \'',DEFAULT_CSV_LOC,'\' does not exist.\n')),
+		'err2.1'=printer('\nError: You must load the data file first before generating a report.\n'),
+		printer('\nUnknown error.\n')
+	)
+	return(next_state)
+}
+
+mco2_state1 <- function() {
+	if (length(DATA_FRAME)>1)
+		return(mco2_err_msg('err1.1',0))
+	if (is.na(DATA_FRAME)) {
+		if (!file.exists(DEFAULT_CSV_LOC))
+			return(mco2_err_msg('err1.2',0))
+		printer('\nProcessing dataset from 2021-2023...')
+		DATA_FRAME<<-load_file(DEFAULT_CSV_LOC)
+		prtrows<-prettyNum(DATA_FRAME$rows,big.mark=',',scientific=FALSE)
+		prtrowsf<-prettyNum(DATA_FRAME$frows,big.mark=',',scientific=FALSE)
+		prtrowsd<-prettyNum(DATA_FRAME$rows-DATA_FRAME$frows,big.mark=',',scientific=FALSE)
+		printer(paste0('\nLoaded ',prtrowsf,' rows from data file of funding year 2021-2023. (hidden ',
+			prtrowsd,' rows)\n'))
+		return(0)
+	}
+	return(mco2_err_msg(NA,0))
+}
+
+mco2_state2 <- function() {
+	if (length(DATA_FRAME)==1)
+		if (is.na(DATA_FRAME))
+			return(mco2_err_msg('err2.1',0))
+		else
+			return(mco2_err_msg(NA,0))
+	gen_rep(DATA_FRAME)
+	return(0)
+}
+
+mco2_state3 <- function() {
+	return(-1)
 }
 
 main <- function() {
-	data_frame <- load_file('..\\data\\dpwh_flood_control_projects.csv')
-	rep1 <- report1(data_frame$content)
-	rep2 <- report2(data_frame$content)
-	rep3 <- report3(data_frame$content)
-	print.data.frame(rep1$content)
-	printer('\n')
-	print.data.frame(rep2$content)
-	printer('\n')
-	print.data.frame(rep3$content)
+	state<-0
+	while (state!=-1) {
+		printer(paste(sep='\n',
+			'\nSelect language implementation:',
+			'[1] Load data file...',
+			'[2] Generate Reports...',
+			'[3] Exit',
+			''
+		))
+		uprompt<-force_numeric(prompter('\nSelect an option: '))
+		if (!is.na(uprompt)) {
+			state<-switch(
+				uprompt,
+				mco2_state1(),
+				mco2_state2(),
+				mco2_state3(),
+				0
+			)
+		}
+	}
 }
 
 main()
