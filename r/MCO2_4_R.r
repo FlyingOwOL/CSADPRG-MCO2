@@ -243,9 +243,7 @@ mco2_state1 <- function() {
 		DATA_FRAME<<-load_file(DEFAULT_CSV_LOC)
 		prtrows<-prettyNum(DATA_FRAME$rows,big.mark=',',scientific=FALSE)
 		prtrowsf<-prettyNum(DATA_FRAME$frows,big.mark=',',scientific=FALSE)
-		prtrowsd<-prettyNum(DATA_FRAME$rows-DATA_FRAME$frows,big.mark=',',scientific=FALSE)
-		printer(paste0('\nLoaded ',prtrowsf,' rows from data file of funding year 2021-2023. (hidden ',
-			prtrowsd,' rows)\n'))
+		printer(paste0('\nLoaded ',prtrowsf,' of ',prtrows,' rows from data file of funding year 2021-2023.\n'))
 		return(0)
 	}
 	return(mco2_err_msg(NA,0))
@@ -276,7 +274,7 @@ main <- function() {
 			''
 		))
 		uprompt<-force_numeric(prompter('\nSelect an option: '))
-		if (!is.na(uprompt)) {
+		if (!is.na(uprompt)&&uprompt>0&&uprompt<=3) {
 			state<-switch(
 				uprompt,
 				mco2_state1(),
