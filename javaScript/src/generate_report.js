@@ -7,7 +7,7 @@ export function generateReport(data){
     console.log("\nGenerating Reports. . .\n" +
         "Outputs saved to individual files...\n"
     );
-    report1(data);
-    report2(data);
-    report3(data);
+    report1(data.data);
+    report2(data.data);
+    report3(data.data);
 }

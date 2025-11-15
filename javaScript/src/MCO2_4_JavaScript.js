@@ -5,6 +5,7 @@ import { loadData } from "./file_loader.js";
 import { generateReport } from "./generate_report.js";
 
 
+
 let userChoice = null;
 let loadedData = null;
 
