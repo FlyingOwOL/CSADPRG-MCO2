@@ -16,7 +16,7 @@
 ```
 npm install prompt-sync
 ```
-5th input this to the terminal to import the CSV reader
+5th input this to the terminal to import the CSV reader & writer
 ```
 npm install papaparse
 ```

@@ -2,6 +2,7 @@ import promptSync from "prompt-sync";
 const prompt = promptSync();
 
 import { loadData } from "./file_loader.js";
+import { generateReport } from "./generate_report.js";
 
 
 let userChoice = null;
@@ -18,7 +19,7 @@ do{
             loadedData = loadData();
             break;
         case '2':
-            console.log("in-progress...\n\n\n");
+            generateReport(loadedData);
             break;
         case '3':
             console.log("Exiting program...\n");
