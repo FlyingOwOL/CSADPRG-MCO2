@@ -8,45 +8,32 @@ export function loadData(){
     let origRows = parsed.data;
 
     let newRows;
-<<<<<<< Updated upstream
-    let countedRows = 0;
-=======
-    let countedRows = origRows.length - 1;
->>>>>>> Stashed changes
+    let countedRows = origRows.length;
     let validRows = 0;
     let invalidRows = 0;
+
+    const allowedYears = ['2021', '2022', '2023'];
     // Clean data: remove rows with 2024 in data fields
     newRows = origRows.filter(row => {
-<<<<<<< Updated upstream
-        if(row['FundingYear'] === '2024' || 
-           row['ActualCompletionDate'].startsWith('2024') ||    // only gets the year part of the ISO date
-           row['StartDate'].startsWith('2024')){                // only gets the year part of the ISO date  
-            
-            // Check for empty fields (any value is empty or just whitespace)
-            const hasEmptyFields = Object.values(row).some(value => !value || value.trim() === '');
-            if (has2024 || hasEmptyFields) {
-                invalidRows += 1;
-                return false;  
-            }
-        } 
-        countedRows += 1;
-=======
         // Check for empty fields (any value is empty or just whitespace)
         const hasEmptyFields = Object.values(row).some(value => !value || value.trim() === '');
-        const invalidYears = !allowedYears.includes(row['FundingYear']);  
-        // TODO: validate start date and completion date
-        
-
+        const has2024 = row['FundingYear'] === '2024' || 
+                 (row['ActualCompletionDate'] && row['ActualCompletionDate'].startsWith('2024')) ||  // Check if exists and starts with '2024'
+                 (row['StartDate'] && row['StartDate'].startsWith('2024'));          
         // Check if exists and starts with '2024'
-        if (invalidYears || hasEmptyFields) {
+        if (has2024 || hasEmptyFields) {
             invalidRows += 1;
             return false;  
         }
->>>>>>> Stashed changes
         return true;
     });
     validRows = countedRows - invalidRows; 
 
-    console.log(`Processing dataset... (${validRows} rows loaded, ${invalidRows} filtered for 2021-2023)`)
-    return newRows; 
+    const newFields = [...parsed.meta.fields, 'CostSavings', 'CompletionDelayDays'];
+    console.log(`Processing dataset... (${countedRows} rows loaded, ${validRows} filtered for 2021-2023)`)
+    const newCSVData = Papa.unparse({
+        fields: newFields,  // Array of header names (e.g., ['FundingYear', 'ActualCompletionDate', ...])
+        data: newRows                // Your filtered array of objects
+    });
+    return newCSVData; 
 }
