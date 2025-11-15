@@ -1,14 +1,16 @@
-import promptSync from "prompt-sync";
-const prompt = promptSync();
+/*********************
+Last names: Dela Torre, Espada, Laguerta, Sy
+Language: JavaScript
+Paradigm(s): Procedural, Functional, Data-Oriented
+*********************/
 
+import promptSync from "prompt-sync";
 import { loadData } from "./file_loader.js";
 import { generateReport } from "./generate_report.js";
 
-
-
+const prompt = promptSync();
 let userChoice = null;
 let loadedData = null;
-
 do{
     console.log("Select Language Implementation:\n" +
                 "[1] Load the file\n" + 

@@ -7,6 +7,20 @@ export function report2(data){
     );
     try{
         const header = ["Rank", "Contractor", "TotalCost", "NumProjects", "AvgDelay", "TotalSavings", "ReliabilityIndex", "RiskFlag"];
+        const contractorsVisited = [];
+        const newData = data.map(row => {
+            return {
+                Rank: row.Rank,
+                Contractor: row.Contractor,
+                TotalCost: row.TotalCost,
+                NumProjects: row.NumProjects,
+                AvgDelay: row.AvgDelay,
+                TotalSavings: row.TotalSavings,
+                ReliabilityIndex: row.ReliabilityIndex,
+                RiskFlag: row.RiskFlag
+            };
+        });
+        displayToCMD(header, newData);
     } catch (error){
         console.log("Error generating Report 2: " + error.message);
     }

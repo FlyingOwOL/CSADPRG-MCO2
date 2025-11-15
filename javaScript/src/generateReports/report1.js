@@ -1,54 +1,111 @@
 import { endOfReportMessage } from "./assist.js";
 import { displayToCMD } from "./assist.js";
+import { exportToCSV } from "./assist.js";
 
-export function report1(data){
+export function report1(data) {
     console.log("Report 1: Regional Flood Mitigation Efficiency Summary\n" +
                 "(Filtered 2021-2023 Projects)\n"
     );
-    try{
+
+    try {
         const header = ["Region", "MainIsland", "TotalBudget", "MedianSavings", "AvgDelay", "HighDelayPct", "EfficiencyScore"];
-        const regionsVisited = [];
-        let totalBudget, medianSavings, avgDelay, highDelayPct, efficiencyScore;
-        let totalDelays = 0;
-        let delayCounts = 0;
-        let delaysOver30 = 0;
-        let savingsArray = [];
-        const newData = data.map(row => {
-            if(!regionsVisited.includes(row.Region)){ //check if region already processed
-                if (regionsVisited.length > 0){       //regionsVisited is not empty
-                    medianSavings = savingsArray[Math.floor(savingsArray.length / 2)];
-                    avgDelay = parseFloat(delayCounts / totalDelays);
-                    highDelayPct = parseFloat((delaysOver30 / totalDelays) * 100);
-                    efficiencyScore = medianSavings / avgDelay * 100;
 
-                    return { //returned processed row
-                        Region: row.Region,
-                        MainIsland: row.MainIsland,
-                        TotalBudget: totalBudget,   
-                        MedianSavings: medianSavings,
-                        AvgDelay: avgDelay,
-                        HighDelayPct: highDelayPct,
-                        EfficiencyScore: efficiencyScore
-                    };
-                }
+        // Step 1: Group data by region using reduce
+        const groupedByRegion = data.reduce((acc, row) => {
+            const region = row.Region;
+            if (!acc[region]) {
+                acc[region] = {
+                    rows: [],
+                    mainIsland: row.MainIsland  // Assume consistent per region
+                };
             }
+            acc[region].rows.push(row);
+            return acc;
+        }, {});
 
-            if (!regionsVisited.includes(row.Region)){ 
-                regionsVisited.push(row.Region);
-                totalBudget = 0;
-                medianSavings = 0;
-                avgDelay = 0;
-                highDelayPct = 0;
-                efficiencyScore = 0;     
-            }
-            totalBudget += parseFloat(row.ApprovedBudgetForContract); 
-            delayCounts += parseInt(row.CompletionDelayDays);
-            totalDelays++;
-            row.CompletionDelayDays > 30 ? delaysOver30++ : null;
-            savingsArray.push(parseFloat(row.CostSavings));
+        // Step 2: First pass - Calculate rawScore for each region and collect them
+        const rawScores = [];
+        Object.keys(groupedByRegion).forEach(region => {
+            const group = groupedByRegion[region];
+            const rows = group.rows;
+
+            let totalDelays = 0;
+            let delayCount = 0;
+            let savingsArray = [];
+
+            rows.forEach(row => {
+                const delay = parseInt(row.CompletionDelayDays);
+                totalDelays += delay;
+                delayCount++;
+                savingsArray.push(parseFloat(row.CostSavings));
+            });
+
+            // Calculate rawScore
+            savingsArray.sort((a, b) => a - b);
+            const medianSavings = Math.round(savingsArray[Math.floor(savingsArray.length / 2)] * 100) / 100;
+            const avgDelay = delayCount > 0 ? Math.round(totalDelays / delayCount) : 0;
+            const rawScore = avgDelay > 0 ? (medianSavings / avgDelay) * 100 : 0;
+            rawScores.push(rawScore);
         });
+
+        const min = Math.min(...rawScores);
+        const max = Math.max(...rawScores);
+
+        // Step 3: Second pass - Map over groups to calculate final aggregates with normalized efficiencyScore
+        const newData = Object.keys(groupedByRegion).map(region => {
+            const group = groupedByRegion[region];
+            const rows = group.rows;
+
+            let totalBudget = 0;
+            let totalDelays = 0;
+            let delayCount = 0;
+            let delaysOver30 = 0;
+            let savingsArray = [];
+
+            rows.forEach(row => {
+                totalBudget += parseFloat(row.ApprovedBudgetForContract);
+                const delay = parseInt(row.CompletionDelayDays);
+                totalDelays += delay;
+                delayCount++;
+                if (delay > 30) delaysOver30++;
+                savingsArray.push(parseFloat(row.CostSavings));
+            });
+
+            savingsArray.sort((a, b) => a - b);
+            const medianSavings = Math.round(savingsArray[Math.floor(savingsArray.length / 2)] * 100) / 100;
+            const avgDelay = delayCount > 0 ? Math.round(totalDelays / delayCount) : 0;
+            const highDelayPct = delayCount > 0 ? Math.round(((delaysOver30 / delayCount) * 100) * 100) / 100 : 0;
+
+            const rawScore = avgDelay > 0 ? (medianSavings / avgDelay) * 100 : 0;
+            // Normalize using global min/max
+            const efficiencyScore = max > min ? Math.round((((rawScore - min) / (max - min)) * 100) * 100) / 100 : 0;
+
+            totalBudget = Math.round(totalBudget * 100) / 100;
+            const formattedBudget = new Intl.NumberFormat('en-PH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(totalBudget);
+            const formattedMedianSaving = new Intl.NumberFormat('en-PH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(medianSavings);
+
+            return {
+                Region: region,
+                MainIsland: group.mainIsland,
+                TotalBudget: formattedBudget,
+                MedianSavings: formattedMedianSaving,
+                AvgDelayInDays: avgDelay,
+                HighDelayPct: highDelayPct,
+                EfficiencyScore: efficiencyScore
+            };
+        });
+        // Step 4: Sort by EfficiencyScore descending
+        newData.sort((a, b) => b.EfficiencyScore - a.EfficiencyScore);
+
+        exportToCSV("report1_regional_summary", header, newData);
         displayToCMD(header, newData);
-    } catch (error){
+    } catch (error) {
         console.log("Error generating Report 1: " + error.message);
     }
     endOfReportMessage("report1_regional_summary");
