@@ -1,5 +1,7 @@
 import fs from 'fs';  // For file I/O (note: fs is built-in, so no path needed)
-import Papa from 'papaparse';  // For CSV parsing   
+import Papa from 'papaparse';  // For CSV parsing
+import jsonfile from 'jsonfile';  // ES module import for jsonfile
+
 
 export function endOfReportMessage(reportName){
     console.log(`(Full table exported to ${reportName}.csv)\n`);
@@ -76,4 +78,12 @@ export function efficiencyScore(rawScore, min, max) {
 
 export function reliabilityIndex(avgDelay, totalSavings, totalCost) {
    return (1 - (avgDelay / 90)) * (totalSavings / totalCost) * 100;
+}
+
+export function generateJSON(data){
+    try{
+        jsonfile.writeFileSync('javaScript/savedReports/', data);
+    } catch (error){
+        console.log("Error exporting to JSON: " + error.message);
+    }    
 }
