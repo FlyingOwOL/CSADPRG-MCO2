@@ -12,7 +12,7 @@ export function displayToCMD(tableHeaders, tableData) {
         Array.isArray(row) ? row : tableHeaders.map(header => row[header] !== undefined && row[header] !== null ? row[header] : '')
     );
     
-    // Function to truncate and prepare strings: if > MAX_CHAR chars, truncate to 16 + "..."
+    // turns excess long strings into truncated strings with "..."
     const prepareString = (str) => {
         const string = String(str);
         return string.length > MAX_CHAR ? string.substring(0, 16) + '...' : string;
