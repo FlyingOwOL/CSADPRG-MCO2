@@ -7,7 +7,23 @@ export function report2(data){
     );
     try{
         const header = ["Rank", "Contractor", "TotalCost", "NumProjects", "AvgDelay", "TotalSavings", "ReliabilityIndex", "RiskFlag"];
-        const contractorsVisited = [];
+        
+        /** contractors contains a group of sub objects with:
+         * { sample 
+         * name: attribute to group by,
+         * totalCost: sum of TotalCost,
+         * numProjects: count of projects,
+         * totalDelays: sum of delays,
+         * totalSavings: sum of savings,
+         * reliabilityIndex: calculated later,
+         * avgDelay: calculated later,
+         * riskFlag: calculated later
+         * }, 
+         * next object
+         */
+        const contractors = { // Group data by contractor object
+
+        };
         const newData = data.map(row => {
             return {
                 Rank: row.Rank,
