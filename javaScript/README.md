@@ -20,6 +20,10 @@ npm install prompt-sync
 ```
 npm install papaparse
 ```
+6th input this to the terminal to import the JSON writer
+```
+npm install jsonfile
+```
 
 
 ## How to Run in CMD

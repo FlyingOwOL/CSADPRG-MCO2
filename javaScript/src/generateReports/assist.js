@@ -82,7 +82,9 @@ export function reliabilityIndex(avgDelay, totalSavings, totalCost) {
 
 export function generateJSON(data){
     try{
-        jsonfile.writeFileSync('javaScript/savedReports/', data);
+        const filepath = 'javaScript/savedReports/summary.json';
+
+        jsonfile.writeFileSync(filepath,  data, { spaces: 2 });
     } catch (error){
         console.log("Error exporting to JSON: " + error.message);
     }    
