@@ -18,6 +18,8 @@ import kotlinx.datetime.daysUntil
 import org.jetbrains.kotlinx.dataframe.DataRow
 import java.math.RoundingMode
 import java.math.BigDecimal
+import kotlin.collections.remove
+import kotlin.text.get
 
 fun main() {
     var userInput : Int
@@ -125,12 +127,13 @@ fun filterDataFrame(dfFloodControl: DataFrame<*>?): DataFrame<*> {
     // Also keeping rows with non-zero and non-negative values in ApprovedBudgetForContract and ContractCost columns
     val dfFloodControlFiltered = dfFloodControl?.filter { it["FundingYear"] as Int in intArrayOf(2021, 2022, 2023)}
     // Replacing missing Municipality with sentinel value "N/A" because it is not important for the analysis
-    val dfFloodControlFillMissingStrings = dfFloodControlFiltered?.fillNA {it["Municipality"]}.with{"N/A"}
-    val dfFloodControlRemoveNARows = dfFloodControlFillMissingStrings.dropNulls {
+    val dfFloodControlFillMissingStrings = dfFloodControlFiltered?.fillNulls {it["Municipality"]}.with{"N/A"}
+    val startDate by column<LocalDate?>()
+    val dfFloodControlFillMissingCompletionDate = dfFloodControlFillMissingStrings.fillNulls {it["ActualCompletionDate"]}.with {startDate}
+    val dfFloodControlRemoveNARows = dfFloodControlFillMissingCompletionDate.dropNulls {
         "ApprovedBudgetForContract" and
                 "ContractCost" and
                 "StartDate" and
-                "ActualCompletionDate" and
                 "ProvincialCapitalLatitude" and
                 "ProvincialCapitalLongitude"
     }

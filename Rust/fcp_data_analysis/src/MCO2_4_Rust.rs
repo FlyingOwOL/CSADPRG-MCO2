@@ -74,8 +74,6 @@ struct FloodControlProject {
     actual_completion_date: NaiveDate, 
     start_date: NaiveDate,             
     contractor: String,
-    latitude: f64,
-    longitude: f64, 
     cost_savings: f64,
     completion_delay_days: i64,
 }
@@ -152,11 +150,7 @@ fn parse_budget(budget_str: &str) -> Option<f64> {
     budget_str.trim().parse::<f64>().ok()
 }
 
-fn parse_coordinate(coord_str: &str) -> Option<f64> {
-    coord_str.trim().parse::<f64>().ok()
-}
-
-fn clean_project(raw: RawFloodControlProject, provincial_averages: &std::collections::HashMap<String, (f64, f64)>) 
+fn clean_project(raw: RawFloodControlProject) 
     -> Option<FloodControlProject> {
     
     // filtering: funding year must be 2021-2023
@@ -167,10 +161,14 @@ fn clean_project(raw: RawFloodControlProject, provincial_averages: &std::collect
 
     // filtering: must have valid dates (parse once, use for validation and calculation)
     let start_date = NaiveDate::parse_from_str(&raw.start_date, "%Y-%m-%d").ok();
-    let end_date = NaiveDate::parse_from_str(&raw.actual_completion_date, "%Y-%m-%d").ok();
+    let mut end_date = NaiveDate::parse_from_str(&raw.actual_completion_date, "%Y-%m-%d").ok();
     
-    if start_date.is_none() || end_date.is_none() {
+    if start_date.is_none() {
         return None;
+    }
+
+    if end_date.is_none() {
+        end_date = start_date;
     }
 
     // filtering: budget field must be float and > 0.0
@@ -184,23 +182,6 @@ fn clean_project(raw: RawFloodControlProject, provincial_averages: &std::collect
         _ => return None,
     };
 
-    //backup coordinates
-    let (backup_lat, backup_long) = 
-         provincial_averages.get(&raw.province).copied().unwrap_or((0.0, 0.0));
-
-    //coordinates where pro
-    let latitude = parse_coordinate(&raw.project_latitude)
-        .filter(|&lat| lat != 0.0)
-        .unwrap_or(backup_lat);
-
-    let longitude = parse_coordinate(&raw.project_longitude)
-        .filter(|&lon| lon != 0.0)
-        .unwrap_or(backup_long);
-
-    //filtering: skip if no valid coordinates available
-    if latitude == 0.0 || longitude == 0.0 {
-        return None;
-    }
 
     let start = start_date.unwrap();
     let end = end_date.unwrap();
@@ -219,8 +200,6 @@ fn clean_project(raw: RawFloodControlProject, provincial_averages: &std::collect
         actual_completion_date: end,  
         start_date: start,           
         contractor: raw.contractor,
-        latitude,
-        longitude,
         cost_savings: approved_budget - contract_cost,
         completion_delay_days: (end - start).num_days(),
     })
@@ -236,21 +215,13 @@ fn read_csv_file<P: AsRef<Path>>(filename: P)
     let mut filtered_row_count: usize = 0;
     let mut projects: Vec<FloodControlProject> = Vec::new();
     
-    //hashmap for provincial averages (province -> (lat, long))
-    let mut provincial_fallbacks: HashMap<String, (f64, f64)> = HashMap::new();
     
     for result in reader.deserialize::<RawFloodControlProject>() {
         total_row_count += 1;
         
         if let Ok(raw_project) = result {
-            if !provincial_fallbacks.contains_key(&raw_project.province) { //check if province already exists
-                let cap_lat = parse_coordinate(&raw_project.provincial_capital_latitude).unwrap_or(0.0);
-                let cap_lon = parse_coordinate(&raw_project.provincial_capital_longitude).unwrap_or(0.0);
-                provincial_fallbacks.insert(raw_project.province.clone(), (cap_lat, cap_lon)); //insert to hashmap
-            }
-            
-            //if clean_project returns Some, add to projects
-            if let Some(fcp) = clean_project(raw_project, &provincial_fallbacks) {
+        //if clean_project returns Some, add to projects
+            if let Some(fcp) = clean_project(raw_project) {
                 projects.push(fcp);
                 filtered_row_count += 1;
             }
@@ -397,7 +368,7 @@ fn aggregate_contractor_stats(projects: &Vec<FloodControlProject>) -> Vec<Contra
 fn aggregate_cost_stats(projects: &Vec<FloodControlProject>) -> Vec<CostOverrunStats> {
     let mut results: Vec<CostOverrunStats> = Vec::new();
     let mut cost_map: HashMap<(u32, String), (u32, u32, f64)> = HashMap::new();
-    // (funding_year, type_of_work): (total_projects, total_cost_savings)
+    // (funding_year, type_of_work): (total_projects,no. neg_cost_saving ,total_cost_savings)
 
     for project in projects {
         let key = (project.funding_year, project.type_of_work.clone());
