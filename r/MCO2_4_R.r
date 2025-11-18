@@ -170,6 +170,7 @@ get_json_contents <- function(content) {
 load_file <- function(csv_path_to_file) {
 	CSV_DATA <- smw(read_csv(csv_path_to_file))
 	CSV_DATAF <- smw(CSV_DATA %>%
+		mutate(ActualCompletionDate=ifelse(is.na(ActualCompletionDate),StartDate,ActualCompletionDate)) %>%
 		filter(
 			!is.na(force_numeric(ApprovedBudgetForContract)) &
 			!is.na(force_numeric(ContractCost)) &
