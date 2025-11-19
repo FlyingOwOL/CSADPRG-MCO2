@@ -1,12 +1,16 @@
+/*********************
+Last names: Dela Torre, Espada, Laguerta, Sy
+Language: JavaScript
+Paradigm(s): Procedural, Functional, Data-Oriented
+*********************/
+
 import promptSync from "prompt-sync";
-const prompt = promptSync();
-
 import { loadData } from "./file_loader.js";
+import { generateReport } from "./generate_report.js";
 
-
+const prompt = promptSync();
 let userChoice = null;
 let loadedData = null;
-
 do{
     console.log("Select Language Implementation:\n" +
                 "[1] Load the file\n" + 
@@ -18,7 +22,7 @@ do{
             loadedData = loadData();
             break;
         case '2':
-            console.log("in-progress...\n\n\n");
+            generateReport(loadedData);
             break;
         case '3':
             console.log("Exiting program...\n");
