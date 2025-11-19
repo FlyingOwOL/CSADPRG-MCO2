@@ -1,3 +1,9 @@
+#********************
+#Last names: DELA TORRE, ESPADA, LAGUERTA, SY
+#Language: R
+#Paradigm(s): Procedural, Functional, Data-Oriented
+#********************
+
 # If 'tidyverse' is old or not installed yet, uncomment the below line for this code to work.
 # Once 'tidyverse' is already installed on the first run, it can be commented again so
 # that it would not download 1.2MB over and over.
